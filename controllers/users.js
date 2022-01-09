@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const bcrypt = require('bcryptjs')
+const { Op } = require('sequelize')
 
 const { User, Blog } = require('../models')
 
@@ -19,6 +20,29 @@ router.get('/', async (req, res) => {
     }
   })
   res.json(users)
+})
+
+router.get('/:id', async (req, res) => {
+  const id = Number(req.params.id)
+  let read = {
+    [Op.in]: [true, false]
+  }
+  if (req.query.read) {
+    read = req.query.read
+  }
+  const user = await User.findByPk(id, {
+    attributes: ['name', 'username'],
+    include: [{
+      model: Blog,
+      as: 'marked_blogs',
+      attributes: { exclude: ['createdAt', 'updatedAt', 'userId'] },
+      through: {
+        attributes: ['id', 'read'],
+        where: { read }
+      },
+    }]
+  })
+  res.json(user)
 })
 
 router.post('/', async (req, res, next) => {

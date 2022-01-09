@@ -1,28 +1,9 @@
 const router = require('express').Router()
-const jwt = require('jsonwebtoken')
 const { Op } = require('sequelize')
 
 const { Blog, User } = require('../models')
-const { SECRET } = require('../utils/config')
-
-const blogFinder = async (req, res, next) => {
-  req.blog = await Blog.findByPk(req.params.id)
-  next()
-}
-
-const tokenExtractor = (req, res, next) => {
-  const authorization = req.get('authorization') //returns the specified http request header
-  if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
-    try {
-      req.decodedToken = jwt.verify(authorization.substring(7), SECRET)
-    } catch {
-      res.status(401).json({ error: 'token invalid' })
-    }
-  } else {
-    res.status(401).json({ error: 'token missing' })
-  }
-  next()
-}
+const tokenExtractor = require('../middlewares/tokenExtractor')
+const blogFinder = require('../middlewares/blogFinder')
 
 router.get('/', async (req, res) => {
   let pattern = '%%'
@@ -38,8 +19,9 @@ router.get('/', async (req, res) => {
       attributes: ['username']
     },
     where: {
-      [Op.or]: [{ title: { [Op.iLike]: pattern } }, 
-        { author: { [Op.iLike]: pattern } 
+      [Op.or]: [{ title: { [Op.iLike]: pattern } },
+      {
+        author: { [Op.iLike]: pattern }
       }]
     },
     order: [['likes', 'DESC']]
