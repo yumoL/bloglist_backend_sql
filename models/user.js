@@ -27,6 +27,10 @@ User.init({
     type: DataTypes.STRING,
     allowNull: false
   },
+  enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  }
 }, {
   sequelize,
   underscored: true,

@@ -2,8 +2,8 @@ const router = require('express').Router()
 const { Op } = require('sequelize')
 
 const { Blog, User } = require('../models')
-const tokenExtractor = require('../middlewares/tokenExtractor')
-const blogFinder = require('../middlewares/blogFinder')
+const { tokenExtractor, userChecker } = require('../middlewares/userHandler')
+const blogFinder = require('../middlewares/blogHandler')
 
 router.get('/', async (req, res) => {
   let pattern = '%%'
@@ -29,13 +29,13 @@ router.get('/', async (req, res) => {
   res.json(blogs)
 })
 
-router.post('/', tokenExtractor, async (req, res, next) => {
+router.post('/', tokenExtractor, userChecker, async (req, res, next) => {
   //const { author, url, title, year } = req.body
   try {
-    const user = await User.findByPk(req.decodedToken.id)
+    //const user = await User.findByPk(req.decodedToken.id)
     const newBlog = await Blog.create({
       ...req.body,
-      userId: user.id,
+      userId: req.user.id,
       year: Number(req.body.year)
     })
     res.json(newBlog)
@@ -44,7 +44,7 @@ router.post('/', tokenExtractor, async (req, res, next) => {
   }
 })
 
-router.delete('/:id', blogFinder, tokenExtractor, async (req, res) => {
+router.delete('/:id', blogFinder, tokenExtractor, userChecker, async (req, res) => {
   if (req.blog.userId != req.decodedToken.id) {
     res.json({ error: 'You can not delete a blog that does not belong to you' })
     return
@@ -55,7 +55,7 @@ router.delete('/:id', blogFinder, tokenExtractor, async (req, res) => {
   res.status(204).end()
 })
 
-router.put('/:id', blogFinder, tokenExtractor, async (req, res, next) => {
+router.put('/:id', blogFinder, tokenExtractor, userChecker, async (req, res, next) => {
   if (req.blog.userId != req.decodedToken.id) {
     res.json({ error: 'You can not modify a blog that does not belong to you' })
     return
